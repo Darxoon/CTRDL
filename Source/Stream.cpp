@@ -4,28 +4,38 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <CTRPluginFramework.hpp>
+
 #include "Stream.h"
+#include "dlfcn.h"
+#include "CTRPFFile.hpp" // IWYU pragma: keep
 
 #include <string.h>
 
 static bool ctrdl_fileSeekImpl(void* stream, size_t offset) {
-    return !fseek((FILE*)((CTRDLStream*)stream)->handle, offset, SEEK_SET);
+    using namespace CTRPluginFramework;
+    
+    CTRPFFile* file = (CTRPFFile*)((CTRDLStream*)stream)->handle;
+    return file->inner.Seek(offset, File::SET) == File::SUCCESS;
 }
 
 static bool ctrdl_fileReadImpl(void* s, void* out, size_t size) {
+    using namespace CTRPluginFramework;
+    
     CTRDLStream* stream = (CTRDLStream*)s;
-    FILE* f = (FILE*)stream->handle;
+    CTRPFFile* f = (CTRPFFile*)stream->handle;
     size_t dataRead = 0;
 
     while (dataRead < size) {
         const size_t toRead = size - dataRead;
-        size_t ret = fread((u8*)(out) + dataRead, 1, toRead, (FILE*)stream->handle);
-        if (ret != toRead) {
-            if (feof(f) || ferror(f))
-                return false;
+        
+        u32 bytesRead;
+        int result = f->inner.Read((u8*)(out) + dataRead, toRead, bytesRead);
+        if (result != File::SUCCESS) {
+            return false;
         }
 
-        dataRead += ret;
+        dataRead += bytesRead;
     }
 
     return true;
@@ -52,7 +62,7 @@ static bool ctrdl_memReadImpl(void* s, void* out, size_t size) {
     return false;
 }
 
-void ctrdl_makeFileStream(CTRDLStream* stream, FILE* f) {
+void ctrdl_makeFileStream(CTRDLStream* stream, CTRPFFile* f) {
     stream->handle = (void*)f;
     stream->seek = ctrdl_fileSeekImpl;
     stream->read = ctrdl_fileReadImpl;

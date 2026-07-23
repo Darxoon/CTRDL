@@ -4,13 +4,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <3ds.h>
 #include <CTRL/App.h>
 #include <CTRL/Memory.h>
+#include <CTRPluginFramework.hpp>
 
 #include "Handle.h"
 #include "Error.h"
 #include "Loader.h"
 #include "Symbol.h"
+#include "CTRPFFile.hpp" // IWYU pragma: keep
 
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -144,21 +147,24 @@ void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* res
     }
 
     // Open file for reading.
-    FILE* f = fopen(path, "rb");
-    if (!f) {
+    using namespace CTRPluginFramework;
+    CTRPFFile* file = new CTRPFFile;
+    Result res = File::Open(file->inner, path);
+    
+    if (res == File::INVALID_PATH || R_FAILED(res)) {
         ctrdl_setLastError(Err_NotFound);
         return NULL;
     }
 
     CTRDLStream stream;
-    ctrdl_makeFileStream(&stream, f);
+    ctrdl_makeFileStream(&stream, file);
     handle = ctrdl_loadObject(path, flags, &stream, resolver, resolverUserData);
 
-    fclose(f);
+    file->inner.Close();
     return handle;
 }
 
-void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
+void* ctrdlFOpen(CTRPFFile* f, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
     if (!f || !ctrdl_checkFlags(flags) || (flags & RTLD_NOLOAD)) {
         ctrdl_setLastError(Err_InvalidParam);
         return NULL;

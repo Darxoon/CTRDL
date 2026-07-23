@@ -30,6 +30,8 @@ typedef struct {
     size_t size;     // Size.
 } CTRDLInfo;
 
+typedef struct CTRPFFile CTRPFFile;
+
 #if defined(__cplusplus)
 extern "C" {
 #endif // __cplusplus
@@ -42,7 +44,7 @@ const char* dlerror(void);
 
 void* ctrdlProgramResolver(const char* sym);
 void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* resolverUserData);
-void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData);
+// void* ctrdlFOpen(CTRPFFile* f, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlMap(const void* buffer, size_t size, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlHandleByAddress(u32 addr);
 void* ctrdlThisHandle(void);

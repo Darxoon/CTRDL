@@ -14,14 +14,17 @@ set(DL_SOURCES
     Source/Handle.c
     Source/Loader.c
     Source/Relocs.c
-    Source/Stream.c
+    Source/Stream.cpp
     Source/Symbol.c
 )
 
 add_library(dl STATIC ${DL_SOURCES})
 target_include_directories(dl PUBLIC Include)
 target_compile_options(dl PRIVATE -Wall -Wno-switch)
-target_link_libraries(dl CTRL)
+target_link_libraries(dl
+    PUBLIC CTRPluginFramework
+    PRIVATE CTRL
+)
 install(TARGETS dl)
 install(FILES Include/dlfcn.h DESTINATION include)
 
