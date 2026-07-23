@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
-include(CMake/CPM.cmake)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 project(dl LANGUAGES C CXX)
 
-CPMAddPackage("gh:kynex7510/CTRL#2e380ba")
+add_subdirectory("CTRL")
 
 set(DL_SOURCES
     Source/API.cpp
@@ -24,6 +23,10 @@ target_compile_options(dl PRIVATE -Wall -Wno-switch)
 target_link_libraries(dl
     PUBLIC CTRPluginFramework
     PRIVATE CTRL
+)
+set_target_properties(dl PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
 )
 install(TARGETS dl)
 install(FILES Include/dlfcn.h DESTINATION include)
