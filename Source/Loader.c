@@ -7,6 +7,7 @@
 #include <CTRL/CodeAllocator.h>
 #include <CTRL/Memory.h>
 
+#include "Error.h"
 #include "Loader.h"
 #include "Handle.h"
 #include "ELFUtil.h"

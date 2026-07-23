@@ -27,9 +27,17 @@ typedef enum {
     Err_FreeFailed,
 } CTRDLError;
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 CTRDLError ctrdl_getLastError(void);
 void ctrdl_setLastError(CTRDLError error);
 void ctrdl_clearLastError(void);
 const char* ctrdl_getErrorAsString(CTRDLError error);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_ERROR_H */

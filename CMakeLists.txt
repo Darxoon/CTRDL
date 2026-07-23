@@ -3,12 +3,12 @@ include(CMake/CPM.cmake)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-project(dl)
+project(dl LANGUAGES C CXX)
 
 CPMAddPackage("gh:kynex7510/CTRL#2e380ba")
 
 set(DL_SOURCES
-    Source/API.c
+    Source/API.cpp
     Source/ELFUtil.c
     Source/Error.c
     Source/Handle.c

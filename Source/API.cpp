@@ -90,7 +90,7 @@ int dladdr(const void* address, Dl_info* info) {
         return 0;
 
     const u32 addr = (u32)address;
-    CTRDLHandle* h = ctrdlHandleByAddress(addr);
+    CTRDLHandle* h = (CTRDLHandle*)ctrdlHandleByAddress(addr);
     if (h) {
         info->dli_fname = h->path;
         info->dli_fbase = (void*)h->base;
@@ -239,7 +239,7 @@ bool ctrdlInfo(void* handle, CTRDLInfo* info) {
     bool success = true;
     if (h->path) {
         info->pathSize = strlen(h->path);
-        info->path = malloc(info->pathSize + 1);
+        info->path = (char*)malloc(info->pathSize + 1);
         if (info->path) {
             memcpy(info->path, h->path, info->pathSize);
             info->path[info->pathSize] = '\0';

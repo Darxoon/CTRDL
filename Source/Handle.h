@@ -8,8 +8,7 @@
 #define _CTRDL_HANDLE_H
 
 #include <dlfcn.h>
-
-#include "ELFUtil.h"
+#include <elf.h>
 
 #define CTRDL_MAX_HANDLES 32
 #define CTRDL_MAX_DEPS 16
@@ -34,6 +33,10 @@ typedef struct {
     char* stringTable;          // String table.
 } CTRDLHandle;
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 void ctrdl_acquireHandleMtx(void);
 void ctrdl_releaseHandleMtx(void);
 
@@ -45,5 +48,9 @@ size_t ctrdl_unsafeNumHandles(void);
 CTRDLHandle* ctrdl_unsafeGetHandleByIndex(size_t index);
 CTRDLHandle* ctrdl_unsafeFindHandleByName(const char* name);
 CTRDLHandle* ctrdl_unsafeFindHandleByAddr(u32 addr);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_HANDLE_H */
