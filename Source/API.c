@@ -161,14 +161,18 @@ void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* res
 }
 
 void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
-    if (!f || !ctrdl_checkFlags(flags) || (flags & RTLD_NOLOAD)) {
+    CTRDLStream stream;
+    ctrdl_makeFileStream(&stream, f);
+    return ctrdlStreamOpen(&stream, flags, resolver, resolverUserData);
+}
+
+void* ctrdlStreamOpen(CTRDLStream* stream, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
+    if (!stream || !ctrdl_checkFlags(flags) || (flags & RTLD_NOLOAD)) {
         ctrdl_setLastError(Err_InvalidParam);
         return NULL;
     }
 
-    CTRDLStream stream;
-    ctrdl_makeFileStream(&stream, f);
-    return ctrdl_loadObject(NULL, flags, &stream, resolver, resolverUserData);
+    return ctrdl_loadObject(NULL, flags, stream, resolver, resolverUserData);
 }
 
 void* ctrdlMap(const void* buffer, size_t size, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
