@@ -163,8 +163,8 @@ CTRDLHandle* ctrdl_createHandle(const char* path, size_t flags) {
     }
 
     handle->path = pathCopy;
-    handle->base = 0;
-    handle->origin = 0;
+    handle->basePage = 0;
+    handle->originPage = 0;
     handle->numPages = 0;
     handle->refc = 1;
     handle->flags = flags;
@@ -245,8 +245,9 @@ CTRDLHandle* ctrdl_unsafeFindHandleByAddr(u32 addr) {
 
     for (size_t i = 0; i < ctrdl_unsafeNumHandles(); ++i) {
         CTRDLHandle* h = ctrdl_unsafeGetHandleByIndex(i);
+        const u32 base = ctrlPageIndexToAddr(h->basePage);
         const size_t size = ctrlNumPagesToSize(h->numPages);
-        if ((addr >= h->base) && (addr <= (h->base + size))) {
+        if ((addr >= base) && (addr <= (base + size))) {
             found = h;
             break;
         }

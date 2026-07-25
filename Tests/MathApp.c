@@ -7,6 +7,10 @@
 
 typedef void (*DoMathFn)(int, int);
 
+// Reserve some heap memory for code allocation.
+u32 __ctru_heap_size = (8 << 20); // 8MB for application heap.
+u32 __ctru_linear_heap_size = (8 << 20); // 8MB for linear heap.
+
 static void enumerateCallback(void* handle) {
     CTRDLInfo info;
     printf("Handle value: 0x%08lx\n", (u32)handle);

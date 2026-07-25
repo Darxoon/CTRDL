@@ -4,6 +4,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <CTRL/Memory.h>
+
 #include "Relocs.h"
 #include "Symbol.h"
 
@@ -58,7 +60,7 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
         if (h->flags & RTLD_GLOBAL) {
             sym = ctrdl_symNameLookupSingle(h, name);
             if (sym) {
-                symBase = h->base;
+                symBase = ctrlPageIndexToAddr(h->basePage);
                 break;
             }
         }
@@ -78,7 +80,7 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
 
                 if (!skipSelf && !strcmp(&ctx->elf->stringTable[candidate->st_name], name)) {
                     sym = candidate;
-                    symBase = ctx->handle->base;
+                    symBase = ctrlPageIndexToAddr(ctx->handle->basePage);
                     break;
                 }
 
@@ -100,9 +102,9 @@ static bool ctrdl_handleSingleReloc(RelContext* ctx, RelEntry* entry) {
     switch (entry->type) {
         case R_ARM_RELATIVE:
             if (entry->addend) {
-                *dst = ctx->handle->base + entry->addend;
+                *dst = ctrlPageIndexToAddr(ctx->handle->basePage) + entry->addend;
             } else {
-                *dst += ctx->handle->base;
+                *dst += ctrlPageIndexToAddr(ctx->handle->basePage);
             }
             return true;
         case R_ARM_ABS32:
@@ -129,7 +131,7 @@ static bool ctrdl_handleRel(RelContext* ctx) {
             RelEntry entry;
             const Elf32_Rel* rel = &relArray[i];
 
-            entry.offset = ctx->handle->base + rel->r_offset;
+            entry.offset = ctrlPageIndexToAddr(ctx->handle->basePage) + rel->r_offset;
             entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rel->r_info), &entry.isWeak);
             entry.addend = 0;
             entry.type = ELF32_R_TYPE(rel->r_info);
@@ -152,7 +154,7 @@ static bool ctrdl_handleRela(RelContext* ctx) {
             RelEntry entry;
             const Elf32_Rela* rela = &relaArray[i];
 
-            entry.offset = ctx->handle->base + rela->r_offset;
+            entry.offset = ctrlPageIndexToAddr(ctx->handle->basePage) + rela->r_offset;
             entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rela->r_info), &entry.isWeak);
             entry.addend = rela->r_addend;
             entry.type = ELF32_R_TYPE(rela->r_info);

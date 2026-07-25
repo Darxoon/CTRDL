@@ -6,6 +6,10 @@
 
 typedef void (*InteropFn)(const char*);
 
+// Reserve some heap memory for code allocation.
+u32 __ctru_heap_size = (8 << 20); // 8MB for application heap.
+u32 __ctru_linear_heap_size = (8 << 20); // 8MB for linear heap.
+
 int main(int argc, char* argv[]) {
     gfxInitDefault();
 

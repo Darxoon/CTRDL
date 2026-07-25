@@ -4,6 +4,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <CTRL/Memory.h>
+
 #include "Symbol.h"
 
 typedef struct {
@@ -84,7 +86,7 @@ const Elf32_Sym* ctrdl_symNameLookupLoadOrder(CTRDLHandle* handle, const char* n
                     break;
             }
         } else if (modBase) {
-            *modBase = handle->base;
+            *modBase = ctrlPageIndexToAddr(handle->basePage);
         }
 
         ctrdl_unlockHandle(handle);
