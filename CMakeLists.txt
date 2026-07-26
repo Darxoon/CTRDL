@@ -13,7 +13,7 @@ set(DL_SOURCES
     Source/Handle.c
     Source/Loader.cpp
     Source/Relocs.c
-    Source/Stream.c
+    Source/Stream.cpp
     Source/Symbol.c
 )
 

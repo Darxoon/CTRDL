@@ -6,6 +6,7 @@
 
 #include "Stream.h"
 
+#include <CTRPluginFramework.hpp>
 #include <format>
 #include <string.h>
 
