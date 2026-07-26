@@ -10,13 +10,20 @@
 #include "dlfcn.h"
 #include "CTRPFFile.hpp" // IWYU pragma: keep
 
+#include <format>
 #include <string.h>
 
 static bool ctrdl_fileSeekImpl(void* stream, size_t offset) {
     using namespace CTRPluginFramework;
     
     CTRPFFile* file = (CTRPFFile*)((CTRDLStream*)stream)->handle;
-    return file->inner.Seek(offset, File::SET) == File::SUCCESS;
+    int result = file->inner.Seek(offset, File::SET);
+    if (R_FAILED(result)) {
+        OSD::Notify(std::format("Seek failed: {} {}", R_SUMMARY(result), R_DESCRIPTION(result)));
+    } else if (result) {
+        OSD::Notify(std::format("Seek failed: {}", result));
+    }
+    return !result;
 }
 
 static bool ctrdl_fileReadImpl(void* s, void* out, size_t size) {
@@ -30,8 +37,12 @@ static bool ctrdl_fileReadImpl(void* s, void* out, size_t size) {
         const size_t toRead = size - dataRead;
         
         u32 bytesRead;
-        int result = f->inner.Read((u8*)(out) + dataRead, toRead, bytesRead);
-        if (result != File::SUCCESS) {
+        int result = f->inner.Read((u8*)out + dataRead, toRead, bytesRead);
+        if (R_FAILED(result)) {
+            OSD::Notify(std::format("Read failed: {} {}", R_SUMMARY(result), R_DESCRIPTION(result)));
+            return false;
+        } else if (result) {
+            OSD::Notify(std::format("Read failed: {}", result));
             return false;
         }
 
@@ -42,23 +53,29 @@ static bool ctrdl_fileReadImpl(void* s, void* out, size_t size) {
 }
 
 static bool ctrdl_memSeekImpl(void* s, size_t offset) {
+    using namespace CTRPluginFramework;
+    
     CTRDLStream* stream = (CTRDLStream*)s;
     if (offset <= stream->size) {
         stream->offset = offset;
         return true;
     }
 
+    OSD::Notify(std::format("Seek failed: {:#x} greater than {:#x}", offset, stream->size));
     return false;
 }
 
 static bool ctrdl_memReadImpl(void* s, void* out, size_t size) {
+    using namespace CTRPluginFramework;
+    
     CTRDLStream* stream = (CTRDLStream*)s;
     if (size <= (stream->size - stream->offset)) {
-        memcpy(out, (void*)((u8*)(stream->handle) + stream->offset), size);
+        memcpy(out, (u8*)stream->handle + stream->offset, size);
         stream->offset += size;
         return true;
     }
 
+    OSD::Notify(std::format("Read failed: {:#x} at {:#x} out of bounds ({:#x})", size, stream->offset, stream->size));
     return false;
 }
 

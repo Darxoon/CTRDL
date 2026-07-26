@@ -4,15 +4,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <3ds.h>
 #include <CTRL/CodeAllocator.h>
 #include <CTRL/Memory.h>
 
+#include <CTRPluginFramework.hpp>
+
+#include "CTRPluginFramework/Graphics/OSD.hpp"
 #include "Error.h"
 #include "Loader.h"
 #include "Handle.h"
 #include "ELFUtil.h"
 #include "Relocs.h"
 
+#include <format>
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,7 +58,7 @@ static char* ctrdl_getDepPath(const char* basePath, const char* name) {
 
     const size_t baseSize = strlen(basePath);
     const size_t nameSize = strlen(name);
-    char* buffer = malloc(baseSize + nameSize);
+    char* buffer = (char*)malloc(baseSize + nameSize);
     if (buffer) {
         memcpy(buffer, basePath, baseSize);
         buffer[baseSize] = '\0';
@@ -131,12 +136,13 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     // Get segments.
     const size_t numSegments = ctrdl_getELFNumSegmentsByType(&ldrData->elf, PT_LOAD);
     if (!numSegments) {
+        CTRPluginFramework::OSD::Notify("Could not get load segment count");
         ctrdl_setLastError(Err_InvalidObject);
         ctrdl_unloadObject(handle);
         return false;
     }
 
-    Elf32_Phdr* loadSegments = malloc(numSegments *  sizeof(Elf32_Phdr));
+    Elf32_Phdr* loadSegments = (Elf32_Phdr*)malloc(numSegments *  sizeof(Elf32_Phdr));
     if (!loadSegments) {
         ctrdl_setLastError(Err_NoMemory);
         ctrdl_unloadObject(handle);
@@ -145,6 +151,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
 
     const size_t actualNumSegments = ctrdl_getELFSegmentsByType(&ldrData->elf, PT_LOAD, loadSegments, numSegments);
     if (actualNumSegments != numSegments) {
+        CTRPluginFramework::OSD::Notify("Could not get load segments");
         ctrdl_setLastError(Err_InvalidObject);
         ctrdl_unloadObject(handle);
         free(loadSegments);
@@ -159,6 +166,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         const Elf32_Phdr* segment = &loadSegments[i];
 
         if (segment->p_memsz < segment->p_filesz) {
+            CTRPluginFramework::OSD::Notify(std::format("Segment {} memsz {:#x} smaller than filesz {:#x}", i, segment->p_memsz, segment->p_filesz));
             ctrdl_setLastError(Err_InvalidObject);
             ctrdl_unloadObject(handle);
             free(loadSegments);
@@ -177,6 +185,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     }
 
     if (highestAddr <= lowestAddr) {
+        CTRPluginFramework::OSD::Notify("Invalid highestAddr");
         ctrdl_setLastError(Err_InvalidObject);
         ctrdl_unloadObject(handle);
         free(loadSegments);
@@ -186,16 +195,21 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     handle->numPages = ctrlSizeToNumPages(highestAddr - lowestAddr);
     
     // Allocate memory and map segments.
-    if (R_FAILED(ctrlAllocCodePages(handle->numPages, &handle->origin))) {
+    Result res;
+    if (R_FAILED(res = ctrlAllocCodePages(handle->numPages, &handle->origin))) {
+        using namespace CTRPluginFramework;
+        OSD::Notify(std::format("No memory: {} {} ({:#x})", R_SUMMARY(res), R_DESCRIPTION(res), handle->origin));
         ctrdl_setLastError(Err_NoMemory);
         ctrdl_unloadObject(handle);
         free(loadSegments);
         return false;
     }
-
+    
     for (size_t i = 0; i < numSegments; ++i) {
         const Elf32_Phdr* segment = &loadSegments[i];
 
+        CTRPluginFramework::OSD::Notify(std::format("Loading segment {} at {:#x} {:#x} {:#x}", i, segment->p_offset, segment->p_type, segment->p_filesz));
+        
         if (!ldrData->stream->seek(ldrData->stream, segment->p_offset)) {
             ctrdl_setLastError(Err_ReadFailed);
             ctrdl_unloadObject(handle);

@@ -11,7 +11,7 @@ set(DL_SOURCES
     Source/ELFUtil.c
     Source/Error.c
     Source/Handle.c
-    Source/Loader.c
+    Source/Loader.cpp
     Source/Relocs.c
     Source/Stream.cpp
     Source/Symbol.c
