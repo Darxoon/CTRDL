@@ -89,6 +89,6 @@ void ctrdl_makeMemStream(CTRDLStream* stream, const void* buffer, size_t size) {
     stream->handle = (void*)buffer;
     stream->seek = ctrdl_memSeekImpl;
     stream->read = ctrdl_memReadImpl;
-    stream->size = 0;
+    stream->size = size;
     stream->offset = 0;
 }
