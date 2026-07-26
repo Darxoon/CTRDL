@@ -1,5 +1,11 @@
-#ifndef _CTRDL_DLFCN_H
-#define _CTRDL_DLFCN_H
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+#ifndef GUARD_CTRDL_DLFCN_H
+#define GUARD_CTRDL_DLFCN_H
 
 #include <3ds.h>
 #include <sys/types.h>
@@ -16,6 +22,9 @@
 typedef void*(*CTRDLResolverFn)(const char* sym, void* userData);
 typedef void(*CTRDLEnumerateFn)(void* handle);
 
+typedef bool(*CTRDLSeekFn)(void* stream, size_t offset);
+typedef bool(*CTRDLReadFn)(void* stream, void* out, size_t size);
+
 typedef struct {
     const char* dli_fname; // Object path.
     void* dli_fbase;       // Object base address.
@@ -30,6 +39,14 @@ typedef struct {
     size_t size;     // Size.
 } CTRDLInfo;
 
+typedef struct {
+    void* handle;     // Opaque handle.
+    CTRDLSeekFn seek; // Seek function.
+    CTRDLReadFn read; // Read function.
+    size_t size;      // Stream size, can be used as storage.
+    size_t offset;    // Stream offset, can be used as storage.
+} CTRDLStream;
+
 #if defined(__cplusplus)
 extern "C" {
 #endif // __cplusplus
@@ -43,6 +60,7 @@ const char* dlerror(void);
 void* ctrdlProgramResolver(const char* sym);
 void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData);
+void* ctrdlStreamOpen(CTRDLStream* stream, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlMap(const void* buffer, size_t size, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlHandleByAddress(u32 addr);
 void* ctrdlThisHandle(void);
@@ -54,4 +72,4 @@ void ctrdlFreeInfo(CTRDLInfo* info);
 }
 #endif // cplusplus
 
-#endif /* _CTRDL_DLFCN_H */
+#endif /* GUARD_CTRDL_DLFCN_H */

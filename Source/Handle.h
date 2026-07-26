@@ -17,8 +17,8 @@
 
 typedef struct {
     char* path;                 // Object path.
-    u32 base;                   // Mirror address of mapped region.
-    u32 origin;                 // Original address of mapped region.
+    size_t basePage;            // Aliased page index of mapped region.
+    size_t originPage;          // Original page index of mapped region.
     size_t numPages;            // Size of mapped region in pages.
     size_t refc;                // Object refcount.
     size_t flags;               // Object flags.

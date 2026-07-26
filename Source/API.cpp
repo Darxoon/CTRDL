@@ -60,7 +60,7 @@ void* dlsym(void* handle, const char* name) {
                 if (h->flags & RTLD_GLOBAL) {
                     const Elf32_Sym* sym = ctrdl_symNameLookupSingle(h, name);
                     if (sym) {
-                        addr = (void*)(h->base + sym->st_value);
+                        addr = (void*)(ctrlPageIndexToAddr(h->basePage) + sym->st_value);
                         break;
                     }
                 }
@@ -79,7 +79,7 @@ void* dlsym(void* handle, const char* name) {
     CTRDLHandle* h = (CTRDLHandle*)handle;
     const Elf32_Sym* sym = ctrdl_symNameLookupDepOrder(h, name);
     if (sym)
-        return (void*)(h->base + sym->st_value);
+        return (void*)(ctrlPageIndexToAddr(h->basePage) + sym->st_value);
 
     ctrdl_setLastError(Err_NotFound);
     return NULL;
@@ -92,13 +92,15 @@ int dladdr(const void* address, Dl_info* info) {
     const u32 addr = (u32)address;
     CTRDLHandle* h = (CTRDLHandle*)ctrdlHandleByAddress(addr);
     if (h) {
-        info->dli_fname = h->path;
-        info->dli_fbase = (void*)h->base;
+        const u32 base = ctrlPageIndexToAddr(h->basePage);
 
-        const Elf32_Sym* sym = ctrdl_symValueLookupSingle(h, addr - h->base);
+        info->dli_fname = h->path;
+        info->dli_fbase = (void*)base;
+
+        const Elf32_Sym* sym = ctrdl_symValueLookupSingle(h, addr - base);
         if (sym) {
             info->dli_sname = &h->stringTable[sym->st_name];
-            info->dli_saddr = (void*)(h->base + sym->st_value);
+            info->dli_saddr = (void*)(base + sym->st_value);
         } else {
             info->dli_sname = NULL;
             info->dli_saddr = NULL;
@@ -159,14 +161,18 @@ void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* res
 }
 
 void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
-    if (!f || !ctrdl_checkFlags(flags) || (flags & RTLD_NOLOAD)) {
+    CTRDLStream stream;
+    ctrdl_makeFileStream(&stream, f);
+    return ctrdlStreamOpen(&stream, flags, resolver, resolverUserData);
+}
+
+void* ctrdlStreamOpen(CTRDLStream* stream, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
+    if (!stream || !ctrdl_checkFlags(flags) || (flags & RTLD_NOLOAD)) {
         ctrdl_setLastError(Err_InvalidParam);
         return NULL;
     }
 
-    CTRDLStream stream;
-    ctrdl_makeFileStream(&stream, f);
-    return ctrdl_loadObject(NULL, flags, &stream, resolver, resolverUserData);
+    return ctrdl_loadObject(NULL, flags, stream, resolver, resolverUserData);
 }
 
 void* ctrdlMap(const void* buffer, size_t size, int flags, CTRDLResolverFn resolver, void* resolverUserData) {
@@ -252,7 +258,7 @@ bool ctrdlInfo(void* handle, CTRDLInfo* info) {
         info->pathSize = 0;
     }
 
-    info->base = h->base;
+    info->base = ctrlPageIndexToAddr(h->basePage);
     info->size = ctrlNumPagesToSize(h->numPages);
 
     ctrdl_unlockHandle(h);

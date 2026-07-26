@@ -5,7 +5,8 @@
  */
 
 #include <3ds.h>
-#include <CTRL/CodeAllocator.h>
+#include <CTRL/Heap.h>
+#include <CTRL/Code.h>
 #include <CTRL/Memory.h>
 
 #include <CTRPluginFramework.hpp>
@@ -20,12 +21,6 @@
 #include <format>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef CTRDL_RESERVED_CODE_PAGES
-u32 __ctrl_code_allocator_pages = CTRDL_RESERVED_CODE_PAGES;
-#else
-u32 __ctrl_code_allocator_pages = 256; // Default to 1MB.
-#endif // CTRDL_RESERVED_CODE_PAGES
 
 typedef struct {
     CTRDLHandle* handle;
@@ -196,15 +191,23 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     
     // Allocate memory and map segments.
     Result res;
-    if (R_FAILED(res = ctrlAllocCodePages(handle->numPages, &handle->origin))) {
+    if (R_FAILED(res = ctrlReserveHeapPages(handle->numPages, &handle->originPage))) {
         using namespace CTRPluginFramework;
-        OSD::Notify(std::format("No memory: {} {} ({:#x})", R_SUMMARY(res), R_DESCRIPTION(res), handle->origin));
+        OSD::Notify(std::format("No memory: {} {} ({:#x})", R_SUMMARY(res), R_DESCRIPTION(res), handle->originPage));
         ctrdl_setLastError(Err_NoMemory);
         ctrdl_unloadObject(handle);
         free(loadSegments);
         return false;
     }
-    
+
+    if (R_FAILED(ctrlHeapAlloc(handle->originPage, handle->numPages))) {
+        handle->originPage = 0;
+        ctrdl_setLastError(Err_MapFailed);
+        ctrdl_unloadObject(handle);
+        free(loadSegments);
+        return false;
+    }
+
     for (size_t i = 0; i < numSegments; ++i) {
         const Elf32_Phdr* segment = &loadSegments[i];
 
@@ -215,7 +218,8 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
             return false;
         }
 
-        if (!ldrData->stream->read(ldrData->stream, (void*)(handle->origin + segment->p_vaddr), segment->p_filesz)) {
+        const u32 dstAddr = ctrlPageIndexToAddr(handle->originPage) + segment->p_vaddr;
+        if (!ldrData->stream->read(ldrData->stream, (void*)(dstAddr), segment->p_filesz)) {
             ctrdl_setLastError(Err_ReadFailed);
             ctrdl_unloadObject(handle);
             free(loadSegments);
@@ -223,14 +227,15 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         }
     }
 
-    if (R_FAILED(ctrlCommitCodePages(handle->origin, handle->numPages, &handle->base))) {
-        ctrdl_setLastError(Err_MapFailed);
+    if (R_FAILED(ctrlReserveCodePages(handle->numPages, &handle->basePage))) {
+        ctrdl_setLastError(Err_NoMemory);
         ctrdl_unloadObject(handle);
         free(loadSegments);
         return false;
     }
 
-    if (R_FAILED(ctrlChangeMemoryPerms(handle->base, ctrlNumPagesToSize(handle->numPages), MEMPERM_READWRITE))) {
+    if (R_FAILED(ctrlAliasPages(handle->originPage, handle->basePage, handle->numPages))) {
+        handle->basePage = 0;
         ctrdl_setLastError(Err_MapFailed);
         ctrdl_unloadObject(handle);
         free(loadSegments);
@@ -248,7 +253,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     // Set correct permissions.
     for (size_t i = 0; i < numSegments; ++i) {
         const Elf32_Phdr* segment = &loadSegments[i];
-        const u32 base = handle->base + segment->p_vaddr;
+        const u32 base = ctrlPageIndexToAddr(handle->basePage) + segment->p_vaddr;
 
         size_t alignedSize = segment->p_memsz;
         if (segment->p_align > 1)
@@ -256,7 +261,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
 
         const MemPerm perms = ctrdl_wrapPerms(segment->p_flags);
 
-        if (R_FAILED(ctrlChangeMemoryPerms(base, alignedSize, perms))) {
+        if (R_FAILED(ctrlChangeMemoryPerms(CUR_PROCESS_HANDLE, base, alignedSize, perms))) {
             ctrdl_setLastError(Err_MapFailed);
             ctrdl_unloadObject(handle);
             free(loadSegments);
@@ -276,7 +281,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     const bool hasInitSz = ctrdl_getELFDynEntryWithTag(&ldrData->elf, DT_INIT_ARRAYSZ, &initEntrySize);
 
     if (hasInitArr && hasInitSz) {
-        const Elf32_Addr* initArray = (const Elf32_Addr*)(handle->base + initEntry.d_un.d_ptr);
+        const Elf32_Addr* initArray = (const Elf32_Addr*)(ctrlPageIndexToAddr(handle->basePage) + initEntry.d_un.d_ptr);
         const size_t numEntries = initEntrySize.d_un.d_val / sizeof(Elf32_Addr);
         for (size_t i = 0; i < numEntries; ++i)
             ctrdl_callInitFini(initArray[i]);
@@ -290,7 +295,7 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     const bool hasFiniSz = ctrdl_getELFDynEntryWithTag(&ldrData->elf, DT_FINI_ARRAYSZ, &finiEntrySize);
 
     if (hasFiniArr && hasFiniSz) {
-        handle->finiArray = (Elf32_Addr*)(handle->base + finiEntry.d_un.d_ptr);
+        handle->finiArray = (Elf32_Addr*)(ctrlPageIndexToAddr(handle->basePage) + finiEntry.d_un.d_ptr);
         handle->numFiniEntries = finiEntrySize.d_un.d_val / sizeof(Elf32_Addr);
     }
 
@@ -338,22 +343,22 @@ bool ctrdl_unloadObject(CTRDLHandle* handle) {
     }
 
     // Unmap segments.
-    if (handle->base && handle->origin) {
-        if (R_FAILED(ctrlReleaseCodePages(handle->origin, handle->base, handle->numPages))) {
+    if (handle->basePage && handle->originPage) {
+        if (R_FAILED(ctrlUnaliasPages(handle->originPage, handle->basePage, handle->numPages))) {
             ctrdl_setLastError(Err_FreeFailed);
             return false;
         }
 
-        handle->base = 0;
+        handle->basePage = 0;
     }
 
-    if (handle->origin) {
-        if (R_FAILED(ctrlFreeCodePages(handle->origin, handle->numPages))) {
+    if (handle->originPage) {
+        if (R_FAILED(ctrlHeapFree(handle->originPage, handle->numPages))) {
             ctrdl_setLastError(Err_FreeFailed);
             return false;
         }
 
-        handle->origin = 0;
+        handle->originPage = 0;
         handle->numPages = 0;
     }
 
