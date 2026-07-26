@@ -25,7 +25,7 @@ typedef struct {
 extern "C" {
 #endif // __cplusplus
 
-void ctrdl_makeFileStream(CTRDLStream* stream, CTRPFFile* f);
+void ctrdl_makeFileStream(CTRDLStream* stream, FILE* f);
 void ctrdl_makeMemStream(CTRDLStream* stream, const void* buffer, size_t size);
 
 #if defined(__cplusplus)
