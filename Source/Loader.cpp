@@ -208,8 +208,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     for (size_t i = 0; i < numSegments; ++i) {
         const Elf32_Phdr* segment = &loadSegments[i];
 
-        CTRPluginFramework::OSD::Notify(std::format("Loading segment {} at {:#x} {:#x} {:#x}", i, segment->p_offset, segment->p_type, segment->p_filesz));
-        
         if (!ldrData->stream->seek(ldrData->stream, segment->p_offset)) {
             ctrdl_setLastError(Err_ReadFailed);
             ctrdl_unloadObject(handle);
