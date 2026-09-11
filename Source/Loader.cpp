@@ -200,7 +200,9 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         return false;
     }
 
-    if (R_FAILED(ctrlHeapAlloc(handle->originPage, handle->numPages))) {
+    if (R_FAILED(res = ctrlHeapAlloc(handle->originPage, handle->numPages))) {
+        using namespace CTRPluginFramework;
+        OSD::Notify(std::format("ctrlHeapAlloc failed: {} {} ({:#x}, {})", R_SUMMARY(res), R_DESCRIPTION(res), handle->originPage, handle->numPages));
         handle->originPage = 0;
         ctrdl_setLastError(Err_MapFailed);
         ctrdl_unloadObject(handle);
@@ -234,7 +236,9 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         return false;
     }
 
-    if (R_FAILED(ctrlAliasPages(handle->originPage, handle->basePage, handle->numPages))) {
+    if (R_FAILED(res = ctrlAliasPages(handle->originPage, handle->basePage, handle->numPages))) {
+        using namespace CTRPluginFramework;
+        OSD::Notify(std::format("ctrlAliasPages failed: {} {} ({:#x}, {:#x}, {})", R_SUMMARY(res), R_DESCRIPTION(res), handle->originPage, handle->basePage, handle->numPages));
         handle->basePage = 0;
         ctrdl_setLastError(Err_MapFailed);
         ctrdl_unloadObject(handle);
@@ -261,7 +265,9 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
 
         const MemPerm perms = ctrdl_wrapPerms(segment->p_flags);
 
-        if (R_FAILED(ctrlChangeMemoryPerms(CUR_PROCESS_HANDLE, base, alignedSize, perms))) {
+        if (R_FAILED(res = ctrlChangeMemoryPerms(CUR_PROCESS_HANDLE, base, alignedSize, perms))) {
+            using namespace CTRPluginFramework;
+            OSD::Notify(std::format("ctrlChangeMemoryPerms failed: {} {} ({:#x}, {:#x})", R_SUMMARY(res), R_DESCRIPTION(res), base, alignedSize));
             ctrdl_setLastError(Err_MapFailed);
             ctrdl_unloadObject(handle);
             free(loadSegments);
