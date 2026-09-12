@@ -254,7 +254,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         free(loadSegments);
         return false;
     }
-    ctrdlLog("Reserved code pages %#x", handle->basePage);
 
     ret = ctrlAliasPages(handle->originPage, handle->basePage, handle->numPages);
     if (R_FAILED(ret)) {
@@ -267,7 +266,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     }
 
     // Apply relocations.
-    ctrdlLog("Applying relocations");
     if (!ctrdl_handleRelocs(handle, &ldrData->elf, ldrData->resolver, ldrData->resolverUserData)) {
         ctrdl_setLastError("Relocation failed");
         ctrdl_unloadObject(handle);
@@ -276,7 +274,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     }
 
     // Set correct permissions.
-    ctrdlLog("Setting permissions");
     for (size_t i = 0; i < numSegments; ++i) {
         const Elf32_Phdr* segment = &loadSegments[i];
         const u32 base = ctrlPageIndexToAddr(handle->basePage) + segment->p_vaddr;
@@ -297,13 +294,11 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         }
     }
 
-    ctrdlLog("Cleanup1");
     ctrlFlushDataCache();
     ctrlInvalidateInstructionCache();
     free(loadSegments);
 
     // Run initializers.
-    ctrdlLog("Running intitializers");
     Elf32_Dyn initEntry;
     const bool hasInitArr = ctrdl_getELFDynEntryWithTag(&ldrData->elf, DT_INIT_ARRAY, &initEntry);
 
@@ -318,7 +313,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
     }
 
     // Fill additional data.
-    ctrdlLog("Filling additional data");
     Elf32_Dyn finiEntry;
     const bool hasFiniArr = ctrdl_getELFDynEntryWithTag(&ldrData->elf, DT_FINI_ARRAY, &finiEntry);
 
@@ -330,7 +324,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
         handle->numFiniEntries = finiEntrySize.d_un.d_val / sizeof(Elf32_Addr);
     }
 
-    ctrdlLog("Cleanup2");
     handle->numSymBuckets = ldrData->elf.numSymBuckets;
     handle->symBuckets = ldrData->elf.symBuckets;
     handle->numSymChains = ldrData->elf.numSymChains;
