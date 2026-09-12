@@ -5,6 +5,7 @@
  */
 
 #include "ELFUtil.h"
+#include "Error.h"
 
 #include <stdlib.h>
 #include <string.h>

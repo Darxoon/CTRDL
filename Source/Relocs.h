@@ -10,6 +10,14 @@
 #include "ELFUtil.h"
 #include "Handle.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 bool ctrdl_handleRelocs(CTRDLHandle* handle, CTRDLElf* elf, CTRDLResolverFn resolver, void* resolverUserData);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_RELOCS_H */

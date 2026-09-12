@@ -9,8 +9,16 @@
 
 #include <dlfcn.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 void ctrdl_setLastError(const char* fmt, ...);
 const char* ctrdl_getLastError(void);
 void ctrdl_clearLastError(void);
+
+#if defined(__cplusplus)
+}
+#endif // __cplusplus
 
 #endif /* _CTRDL_ERROR_H */

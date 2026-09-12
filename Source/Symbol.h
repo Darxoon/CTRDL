@@ -9,9 +9,17 @@
 
 #include "Handle.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 const Elf32_Sym* ctrdl_symNameLookupSingle(CTRDLHandle* handle, const char* name);
 const Elf32_Sym* ctrdl_symNameLookupLoadOrder(CTRDLHandle* handle, const char* name, u32* modBase);
 const Elf32_Sym* ctrdl_symNameLookupDepOrder(CTRDLHandle* handle, const char* name);
 const Elf32_Sym* ctrdl_symValueLookupSingle(CTRDLHandle* handle, Elf32_Word value);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_SYMBOL_H */

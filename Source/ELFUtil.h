@@ -7,7 +7,6 @@
 #ifndef _CTRDL_ELFUTIL_H
 #define _CTRDL_ELFUTIL_H
 
-#include "Error.h"
 #include "Stream.h"
 
 #include <elf.h>
@@ -29,6 +28,10 @@ typedef struct {
     size_t relaArraySize;
 } CTRDLElf;
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 Elf32_Word ctrdl_getELFSymNameHash(const char* name);
 bool ctrdl_parseELF(CTRDLStream* stream, CTRDLElf* out);
 void ctrdl_freeELF(CTRDLElf* elf);
@@ -46,5 +49,9 @@ size_t ctrdl_getELFDynEntriesWithTag(CTRDLElf* elf, Elf32_Sword tag, Elf32_Dyn* 
 static inline bool ctrdl_getELFDynEntryWithTag(CTRDLElf* elf, Elf32_Sword tag, Elf32_Dyn* out) {
     return ctrdl_getELFDynEntriesWithTag(elf, tag, out, 1);
 }
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_ELFUTIL_H */

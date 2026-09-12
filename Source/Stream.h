@@ -10,7 +10,15 @@
 #include <dlfcn.h>
 #include <stdio.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 void ctrdl_makeFileStream(CTRDLStream* stream, FILE* f);
 void ctrdl_makeMemStream(CTRDLStream* stream, const void* buffer, size_t size);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_STREAM_H */

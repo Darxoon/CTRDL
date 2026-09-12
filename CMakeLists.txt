@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-project(dl)
+project(dl LANGUAGES C CXX)
 
 add_subdirectory("CTRL")
 
@@ -20,7 +20,14 @@ set(DL_SOURCES
 add_library(dl STATIC ${DL_SOURCES})
 target_include_directories(dl PUBLIC Include)
 target_compile_options(dl PRIVATE -Wall -Wno-switch)
-target_link_libraries(dl CTRL)
+target_link_libraries(dl
+    PUBLIC CTRPluginFramework
+    PRIVATE CTRL
+)
+set_target_properties(dl PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
 install(TARGETS dl)
 install(FILES Include/dlfcn.h DESTINATION include)
 

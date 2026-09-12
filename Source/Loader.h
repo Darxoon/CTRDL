@@ -10,7 +10,15 @@
 #include "Handle.h"
 #include "Stream.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif // __cplusplus
+
 CTRDLHandle* ctrdl_loadObject(const char* name, int flags, CTRDLStream* stream, CTRDLResolverFn resolver, void* resolverUserData);
 bool ctrdl_unloadObject(CTRDLHandle* handle);
+
+#if defined(__cplusplus)
+}
+#endif // cplusplus
 
 #endif /* _CTRDL_LOADER_H */

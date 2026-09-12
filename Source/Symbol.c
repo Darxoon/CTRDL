@@ -7,6 +7,7 @@
 #include <CTRL/Memory.h>
 
 #include "Symbol.h"
+#include "ELFUtil.h"
 
 typedef struct {
     CTRDLHandle* deps[CTRDL_MAX_HANDLES];

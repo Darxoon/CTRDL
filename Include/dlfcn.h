@@ -68,6 +68,8 @@ void ctrdlEnumerate(CTRDLEnumerateFn callback);
 bool ctrdlInfo(void* handle, CTRDLInfo* info);
 void ctrdlFreeInfo(CTRDLInfo* info);
 
+void ctrdlLog(const char* msg, ...) __attribute__(( format(printf, 1, 2) ));
+
 #if defined(__cplusplus)
 }
 #endif // cplusplus
