@@ -9,35 +9,16 @@
 
 #include <dlfcn.h>
 
-typedef enum {
-    Err_OK,
-    Err_InvalidParam,
-    Err_ReadFailed,
-    Err_NoMemory,
-    Err_HandleLimit,
-    Err_NotFound,
-    Err_InvalidObject,
-    Err_InvalidBit,
-    Err_NotSO,
-    Err_InvalidArch,
-    Err_MapFailed,
-    Err_RelocFailed,
-    Err_DepsLimit,
-    Err_DepFailed,
-    Err_FreeFailed,
-} CTRDLError;
-
 #if defined(__cplusplus)
 extern "C" {
 #endif // __cplusplus
 
-CTRDLError ctrdl_getLastError(void);
-void ctrdl_setLastError(CTRDLError error);
+void ctrdl_setLastError(const char* fmt, ...);
+const char* ctrdl_getLastError(void);
 void ctrdl_clearLastError(void);
-const char* ctrdl_getErrorAsString(CTRDLError error);
 
 #if defined(__cplusplus)
 }
-#endif // cplusplus
+#endif // __cplusplus
 
 #endif /* _CTRDL_ERROR_H */
