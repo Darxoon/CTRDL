@@ -1,18 +1,17 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
-include(CMake/CPM.cmake)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 project(dl)
 
-CPMAddPackage("gh:kynex7510/CTRL#332b42c")
+add_subdirectory("CTRL")
 
 set(DL_SOURCES
     Source/API.c
     Source/ELFUtil.c
     Source/Error.c
     Source/Handle.c
-    Source/Loader.c
+    Source/Loader.cpp
     Source/Relocs.c
     Source/Stream.c
     Source/Symbol.c
