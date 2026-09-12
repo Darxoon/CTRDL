@@ -42,7 +42,7 @@ static bool ctrdl_memSeekImpl(void* s, size_t offset) {
         return true;
     }
 
-    OSD::Notify(std::format("Seek failed: {:#x} greater than {:#x}", offset, stream->size));
+    ctrdlLog("Seek failed: %#x greater than %#x", offset, stream->size);
     return false;
 }
 
@@ -56,7 +56,7 @@ static bool ctrdl_memReadImpl(void* s, void* out, size_t size) {
         return true;
     }
 
-    OSD::Notify(std::format("Read failed: {:#x} at {:#x} out of bounds ({:#x})", size, stream->offset, stream->size));
+    ctrdlLog("Read failed: %#x at %#x out of bounds (%#x)", size, stream->offset, stream->size);
     return false;
 }
 
