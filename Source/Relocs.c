@@ -7,6 +7,7 @@
 #include <CTRL/Memory.h>
 
 #include "Relocs.h"
+#include "Error.h"
 #include "Symbol.h"
 
 #include <string.h> // strcmp
@@ -19,15 +20,16 @@ typedef struct {
 } RelContext;
 
 typedef struct {
-  uintptr_t offset;
-  uintptr_t symbol;
-  uint32_t addend;
-  uint8_t type;
-  bool isWeak;
+    const char* name;
+    uintptr_t offset;
+    uintptr_t symbol;
+    uint32_t addend;
+    uint8_t type;
+    bool isWeak;
 } RelEntry;
 
 // Relocations are processed in load order.
-static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* isWeak) {
+static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, const char** outName, bool* isWeak) {
     if (index == STN_UNDEF) {
         *isWeak = false;
         return 0;
@@ -36,6 +38,7 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
     u32 symBase = 0;
     const Elf32_Sym* symEntry = &ctx->elf->symEntries[index];
     const char* name = &ctx->elf->stringTable[symEntry->st_name];
+    *outName = name;
     const bool weak = ELF32_ST_BIND(symEntry->st_info) == STB_WEAK;
     *isWeak = weak;
 
@@ -123,9 +126,12 @@ static bool ctrdl_handleSingleReloc(RelContext* ctx, RelEntry* entry) {
             } else if (entry->isWeak) {
                 return true;
             }
-            break;
+
+            ctrdl_setLastError("Relocation failed for '%s': not found", entry->name);
+            return false;
     }
 
+    ctrdl_setLastError("Relocation failed for '%s': unknown type %d", entry->name, entry->type);
     return false;
 }
 
@@ -135,11 +141,11 @@ static bool ctrdl_handleRel(RelContext* ctx) {
     if (relArray) {
         const size_t size = ctx->elf->relArraySize;
         for (size_t i = 0; i < size; ++i) {
-            RelEntry entry;
+            RelEntry entry = {0};
             const Elf32_Rel* rel = &relArray[i];
 
             entry.offset = ctrlPageIndexToAddr(ctx->handle->basePage) + rel->r_offset;
-            entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rel->r_info), &entry.isWeak);
+            entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rel->r_info), &entry.name, &entry.isWeak);
             entry.addend = 0;
             entry.type = ELF32_R_TYPE(rel->r_info);
 
@@ -158,11 +164,11 @@ static bool ctrdl_handleRela(RelContext* ctx) {
         const size_t size = ctx->elf->relaArraySize;
 
         for (size_t i = 0; i < size; ++i) {
-            RelEntry entry;
+            RelEntry entry = {0};
             const Elf32_Rela* rela = &relaArray[i];
 
             entry.offset = ctrlPageIndexToAddr(ctx->handle->basePage) + rela->r_offset;
-            entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rela->r_info), &entry.isWeak);
+            entry.symbol = ctrdl_resolveSymbol(ctx, ELF32_R_SYM(rela->r_info), &entry.name, &entry.isWeak);
             entry.addend = rela->r_addend;
             entry.type = ELF32_R_TYPE(rela->r_info);
 

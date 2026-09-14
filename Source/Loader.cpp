@@ -267,7 +267,6 @@ static bool ctrdl_mapObject(LdrData* ldrData) {
 
     // Apply relocations.
     if (!ctrdl_handleRelocs(handle, &ldrData->elf, ldrData->resolver, ldrData->resolverUserData)) {
-        ctrdl_setLastError("Relocation failed");
         ctrdl_unloadObject(handle);
         free(loadSegments);
         return false;
