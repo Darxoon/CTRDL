@@ -95,13 +95,11 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
     }
     
     if (sym) {
-        // debug
-        // char buf[0x100];
-        // snprintf(buf, sizeof(buf), "success %s %#x %#x", name, symBase, sym->st_value);
-        // ctrdlOnResolveFailure(buf);
         return symBase + sym->st_value;
     } else {
-        ctrdlOnResolveFailure(name);
+        if (!weak) {
+            ctrdlOnResolveFailure(name);
+        }
         return 0;
     }
 }
