@@ -13,7 +13,7 @@
 extern "C" {
 #endif // __cplusplus
 
-void ctrdl_setLastError(const char* fmt, ...);
+void ctrdl_setLastError(const char* fmt, ...) __attribute__(( format(printf, 1, 2) ));
 const char* ctrdl_getLastError(void);
 void ctrdl_clearLastError(void);
 
