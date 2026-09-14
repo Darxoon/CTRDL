@@ -58,6 +58,7 @@ int dladdr(const void* addr, Dl_info* info);
 const char* dlerror(void);
 
 void* ctrdlProgramResolver(const char* sym);
+void ctrdlOnResolveFailure(const char* sym);
 void* ctrdlOpen(const char* path, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlFOpen(FILE* f, int flags, CTRDLResolverFn resolver, void* resolverUserData);
 void* ctrdlStreamOpen(CTRDLStream* stream, int flags, CTRDLResolverFn resolver, void* resolverUserData);

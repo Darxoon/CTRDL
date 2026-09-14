@@ -78,7 +78,7 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
                 const Elf32_Sym* candidate = &ctx->elf->symEntries[chainIndex];
                 const bool skipSelf = candidate == symEntry && weak;
 
-                if (!skipSelf && !strcmp(&ctx->elf->stringTable[candidate->st_name], name)) {
+                if (!skipSelf && !strcmp(&ctx->elf->stringTable[candidate->st_name], name) && candidate->st_shndx != 0) {
                     sym = candidate;
                     symBase = ctrlPageIndexToAddr(ctx->handle->basePage);
                     break;
@@ -93,8 +93,17 @@ static u32 ctrdl_resolveSymbol(const RelContext* ctx, Elf32_Word index, bool* is
         // Look into dependencies.
         sym = ctrdl_symNameLookupLoadOrder(ctx->handle, name, &symBase);
     }
-
-    return sym ? (symBase + sym->st_value) : 0;
+    
+    if (sym) {
+        // debug
+        // char buf[0x100];
+        // snprintf(buf, sizeof(buf), "success %s %#x %#x", name, symBase, sym->st_value);
+        // ctrdlOnResolveFailure(buf);
+        return symBase + sym->st_value;
+    } else {
+        ctrdlOnResolveFailure(name);
+        return 0;
+    }
 }
 
 static bool ctrdl_handleSingleReloc(RelContext* ctx, RelEntry* entry) {

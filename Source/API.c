@@ -17,6 +17,7 @@
 #include <string.h>
 
 __attribute__((weak)) void* ctrdlProgramResolver(const char* symName) { return NULL; }
+__attribute__((weak)) void ctrdlOnResolveFailure(const char* symName) {}
 
 static bool ctrdl_checkFlags(int flags) {
     // Unsupported flags.
